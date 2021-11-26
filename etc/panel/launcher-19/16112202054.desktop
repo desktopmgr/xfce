@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Editor
+Comment=My Editor
+Exec=myeditor
+Icon=accessories-text-editor
+Path=~
+Terminal=false
+StartupNotify=false
