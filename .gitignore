@@ -4,3 +4,5 @@ ignoredirmessage
 */terminal/*
 desktop/icons.screen.latest.rc
 desktop/icons.screen0-1008x584.rc
+# ignore commit message
+.gitcommit
