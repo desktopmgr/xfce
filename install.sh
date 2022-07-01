@@ -173,9 +173,9 @@ if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
   printf_cyan "Getting root privileges"
   if sudo -n true; then
     printf_blue "Proccessing fonts/icons/themes"
-    execute "sudo fontmgr install --all" "Installing fonts"
-    execute "sudo iconmgr install N.I.B." "Installing icons"
-    execute "sudo thememgr install Arc-Pink-Dark" "Installing themes"
+    execute "sudo bash -l -c 'fontmgr install --all'" "Installing fonts"
+    execute "sudo bash -l -c 'iconmgr install N.I.B.'" "Installing icons"
+    execute "sudo bash -l -c 'thememgr install Arc-Pink-Dark'" "Installing themes"
   fi
 fi
 printf_question_timeout "$ICON_QUESTION Should I install grub customizations?" "1" "answer" "-s"
