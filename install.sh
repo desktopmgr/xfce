@@ -73,7 +73,7 @@ desktopmgr_install
 show_optvars "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Do not update
-installer_noupdate "$@"
+#installer_noupdate "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Requires root - no point in continuing
 #sudoreq  # sudo required
@@ -83,7 +83,8 @@ installer_noupdate "$@"
 desktopmgr_run_init
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # end with a space
-APP="$APPNAME geany firefox thunar xfce4-terminal sxhkd xfce4-notifyd notify-send lxappearance qt5ct "
+APP="$APPNAME geany firefox thunar xfce4-terminal sxhkd "
+APP+="xfce4-notifyd notify-send lxappearance qt5ct "
 PERL=""
 PYTH=""
 PIPS=""
