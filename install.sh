@@ -73,7 +73,7 @@ desktopmgr_install
 show_optvars "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Do not update
-#installer_noupdate "$@"
+installer_noupdate "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Requires root - no point in continuing
 #sudoreq  # sudo required
