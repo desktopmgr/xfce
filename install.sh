@@ -129,7 +129,7 @@ if am_i_online; then
   if [ -d "$INSTDIR/.git" ]; then
     execute "git_update $INSTDIR" "Updating $APPNAME configurations"
   else
-    execute "git_clone $REPO $INSTDIR" "Installing $APPNAME ions"
+    execute "git_clone $REPO $INSTDIR" "Installing $APPNAME configurations"
   fi
   # exit on fail
   failexitcode $? "Failed to download $REPO/$APPNAME to $INSTDIR"
@@ -179,9 +179,9 @@ if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
   printf_cyan "Getting root privileges"
   if sudo -n true; then
     printf_blue "Proccessing fonts/icons/themes"
-    execute "sudo bash -l -c 'fontmgr install --all'" "Installing fonts"
-    execute "sudo bash -l -c 'iconmgr install N.I.B.'" "Installing icons"
-    execute "sudo bash -l -c 'thememgr install Arc-Pink-Dark'" "Installing themes"
+    execute "sudo bash -c 'fontmgr install --all'" "Installing fonts"
+    execute "sudo bash -c 'iconmgr install N.I.B.'" "Installing icons"
+    execute "sudo bash -c 'thememgr install Arc-Pink-Dark'" "Installing themes"
   fi
 fi
 printf_question_timeout "$ICON_QUESTION Should I install grub customizations?" "1" "answer" "-s"
