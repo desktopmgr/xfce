@@ -29,6 +29,7 @@
       <property name="&lt;Super&gt;r" type="empty">
         <property name="startup-notify" type="empty"/>
       </property>
+      <property name="&lt;Alt&gt;&lt;Super&gt;s" type="empty"/>
     </property>
     <property name="custom" type="empty">
       <property name="&lt;Primary&gt;Escape" type="string" value="xfdesktop --menu"/>
@@ -54,7 +55,6 @@
       <property name="&lt;Super&gt;b" type="string" value="mybrowser"/>
       <property name="&lt;Super&gt;F3" type="string" value="myeditor"/>
       <property name="&lt;Super&gt;Return" type="string" value="myterminal"/>
-      <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="myterminal"/>
       <property name="MyComputer" type="string" value="thunar"/>
       <property name="AudioMedia" type="string" value="myterminal -e multimedia">
         <property name="startup-notify" type="bool" value="true"/>
@@ -83,6 +83,7 @@
       <property name="&lt;Super&gt;F12" type="string" value="dmenu-usb mount"/>
       <property name="&lt;Super&gt;F11" type="string" value="dmenu-usb unmount"/>
       <property name="&lt;Alt&gt;d" type="string" value="dmenu_run -i -fn NotoMonoRegular:bold:pixelsize=14"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="xfce4-terminal --drop-down"/>
     </property>
   </property>
   <property name="xfwm4" type="empty">
@@ -141,8 +142,8 @@
       <property name="&lt;Primary&gt;F12" type="empty"/>
       <property name="&lt;Super&gt;KP_Left" type="empty"/>
       <property name="&lt;Super&gt;KP_Right" type="empty"/>
-      <property name="&lt;Super&gt;KP_Up" type="empty"/>
       <property name="&lt;Super&gt;KP_Down" type="empty"/>
+      <property name="&lt;Super&gt;KP_Up" type="empty"/>
       <property name="&lt;Super&gt;KP_Page_Up" type="empty"/>
       <property name="&lt;Super&gt;KP_Home" type="empty"/>
       <property name="&lt;Super&gt;KP_End" type="empty"/>
