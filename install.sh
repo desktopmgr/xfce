@@ -186,6 +186,7 @@ PHP_COMPOSER=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Show a custom message after install
 __run_post_message() {
+  local PATH="/sbin:/usr/sbin:$PATH"
   printf_question_timeout "$ICON_QUESTION Should I install the themes and icons?" "1" "answer" "-s"
   if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
     SUDO_PROMPT="$(printf "\n\t\t\033[1;31m")[sudo]$(printf "\033[1;36m") password for $(printf "\033[1;32m")%p: $(printf "\033[0m")"
