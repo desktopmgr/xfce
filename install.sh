@@ -214,7 +214,7 @@ __run_post_message() {
 # Define pre-install scripts
 __run_pre_install() {
   local getRunStatus=0
-  if pidof xfce4-panel &>/dev/null; then xfce4-panel -s &>/dev/null && xfce4-panel -q &>/dev/null && sleep 3; fi
+  if pidof xfce4-panel &>/dev/null; then xfce4-panel -s &>/dev/null && xfce4-panel -q &>/dev/null && sleep 3 && panel="yes"; fi
   for d in "$APPDIR"/panel/launcher-*; do
     __rm_rf "$d"
   done
@@ -240,15 +240,22 @@ __run_post_install() {
   mpdhostserver="${GETMPDSERVER}"
   __replace_all "MPDSERVER_host" "$mpdhostserver" "$APPDIR"
   __replace_all "/home/jason" "$HOME"
+  if [ "$panel" = "yes" ]; then
+    xfce4-panel &>/dev/null &
+    disown
+  fi
   return $getRunStatus
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Custom plugin function
 __custom_plugin() {
   local getRunStatus=0
+  local plugin_file="$APPDIR/plugin_list.txt"
   local tmpFile="${TMP:-/tmp}/desktopmgr_xfce4"
-  pkmgr search xfce4 | awk '{print $1}' | grep 'plugin' >"$tmpFile" && pkmgr list "$tmpFile"
-  [ -f "$tmpFile" ] && __rm_rf "$tmpFile"
+  if [ ! -f "$plugin_file" ]; then
+    pkmgr search xfce4 | awk '{print $1}' | grep -v 'dev' | grep 'plugin' >"$tmpFile" && pkmgr list "$tmpFile"
+    [ -f "$tmpFile" ] && __mv_f "$tmpFile" "$plugin_file"
+  fi
   return $getRunStatus
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -394,17 +401,17 @@ run_postinst() {
 # run post install scripts
 execute "run_postinst" "Running post install scripts"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# create version file
-desktopmgr_install_version
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# run exit function
-run_exit
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # run any external scripts
 __run_build_script
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Output post install message
 __run_post_message
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# create version file
+desktopmgr_install_version
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run exit function
+run_exit
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # End application
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
