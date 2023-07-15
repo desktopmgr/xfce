@@ -1,202 +1,413 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202207032056-git
-# @Author            :  Jason Hempstead
-# @Contact           :  jason@casjaysdev.com
-# @License           :  LICENSE.md
-# @ReadME            :  install.sh --help
-# @Copyright         :  Copyright: (c) 2022 Jason Hempstead, Casjays Developments
-# @Created           :  Tuesday, Jul 12, 2022 16:17 EDT
-# @File              :  install.sh
-# @Description       :
-# @TODO              :
-# @Other             :
-# @Resource          :
-# @sudo/root         :  no
+##@Version           :  202305271111-git
+# @@Author           :  Jason Hempstead
+# @@Contact          :  jason@casjaysdev.com
+# @@License          :  LICENSE.md
+# @@ReadME           :  install.sh --help
+# @@Copyright        :  Copyright: (c) 2023 Jason Hempstead, Casjays Developments
+# @@Created          :  Saturday, Jul 15, 2023 17:07 EDT
+# @@File             :  install.sh
+# @@Description      :  Install configurations for xfce4
+# @@Changelog        :  New script
+# @@TODO             :  Better documentation
+# @@Other            :
+# @@Resource         :
+# @@Terminal App     :  no
+# @@sudo/root        :  no
+# @@Template         :  installers/desktopmgr
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# shell check options
+# shellcheck disable=SC2016
+# shellcheck disable=SC2031
+# shellcheck disable=SC2120
+# shellcheck disable=SC2155
+# shellcheck disable=SC2199
+# shellcheck disable=SC2317
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 APPNAME="xfce4"
-VERSION="202207032056-git"
+VERSION="202305271111-git"
 HOME="${USER_HOME:-$HOME}"
 USER="${SUDO_USER:-$USER}"
 RUN_USER="${SUDO_USER:-$USER}"
-SRC_DIR="${BASH_SOURCE%/*}"
+SCRIPT_SRC_DIR="${BASH_SOURCE%/*}"
+export SCRIPTS_PREFIX="desktopmgr"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+REPO_BRANCH="${GIT_REPO_BRANCH:-main}"
+PLUGIN_DIR="$HOME/.local/share/$APPNAME/plugins"
+REPO="https://github.com/$SCRIPTS_PREFIX/$APPNAME"
+INSTDIR="$HOME/.local/share/CasjaysDev/$SCRIPTS_PREFIX/$APPNAME"
+REPORAW="https://github.com/$SCRIPTS_PREFIX/$APPNAME/raw/$REPO_BRANCH"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+APPDIR="$HOME/.config/$APPNAME"
+PLUGIN_DIR="$HOME/.local/share/$APPNAME/plugins"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+BUILD_NAME="$APPNAME"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set bash options
-if [[ "$1" == "--debug" ]]; then shift 1 && set -xo pipefail && export SCRIPT_OPTS="--debug" && export _DEBUG="on"; fi
-
+trap 'retVal=$?;trap_exit' ERR EXIT SIGINT
+#if [ ! -t 0 ] && { [ "$1" = --term ] || [ $# = 0 ]; }; then { [ "$1" = --term ] && shift 1 || true; } && TERMINAL_APP="TRUE" myterminal -e "$APPNAME $*" && exit || exit 1; fi
+[ "$1" = "--debug" ] && set -x && export SCRIPT_OPTS="--debug" && export _DEBUG="on"
+[ "$1" = "--raw" ] && export SHOW_RAW="true"
+set -o pipefail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+for app in curl wget git; do type -P "$app" >/dev/null 2>&1 || missing_app+=("$app"); done && [ -z "${missing_app[*]}" ] || { printf '%s\n' "${missing_app[*]}" && exit 1; }
+connect_test() { curl -q -ILSsf --retry 1 --max-time 2 "https://1.1.1.1" 2>&1 | grep -iq 'server:*.cloudflare' || return 1; }
+verify_url() { urlcheck "$1" &>/dev/null || { printf_red "😿 The URL $1 returned an error. 😿" && exit 1; }; }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Import functions
 CASJAYSDEVDIR="${CASJAYSDEVDIR:-/usr/local/share/CasjaysDev/scripts}"
 SCRIPTSFUNCTDIR="${CASJAYSDEVDIR:-/usr/local/share/CasjaysDev/scripts}/functions"
-SCRIPTSFUNCTFILE="${SCRIPTSAPPFUNCTFILE:-app-installer.bash}"
+SCRIPTSFUNCTFILE="${SCRIPTSAPPFUNCTFILE:-mgr-installers.bash}"
 SCRIPTSFUNCTURL="${SCRIPTSAPPFUNCTURL:-https://github.com/desktopmgr/installer/raw/main/functions}"
-connect_test() { ping -c1 1.1.1.1 &>/dev/null || curl --disable -LSs --connect-timeout 3 --retry 0 --max-time 1 1.1.1.1 2>/dev/null | grep -e "HTTP/[0123456789]" | grep -q "200" -n1 &>/dev/null; }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if [ -f "$PWD/$SCRIPTSFUNCTFILE" ]; then
   . "$PWD/$SCRIPTSFUNCTFILE"
 elif [ -f "$SCRIPTSFUNCTDIR/$SCRIPTSFUNCTFILE" ]; then
   . "$SCRIPTSFUNCTDIR/$SCRIPTSFUNCTFILE"
 elif connect_test; then
-  curl -LSs "$SCRIPTSFUNCTURL/$SCRIPTSFUNCTFILE" -o "/tmp/$SCRIPTSFUNCTFILE" || exit 1
+  curl -q -LSsf "$SCRIPTSFUNCTURL/$SCRIPTSFUNCTFILE" -o "/tmp/$SCRIPTSFUNCTFILE" || exit 1
   . "/tmp/$SCRIPTSFUNCTFILE"
 else
   echo "Can not load the functions file: $SCRIPTSFUNCTDIR/$SCRIPTSFUNCTFILE" 1>&2
-  exit 1
+  exit 90
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Call the main function
-desktopmgr_install
+# Define custom functions
+__am_i_online() { connect_test || return 1; }
+__run_git_clone_pull() { git_update "$1" "$2"; }
+__cmd_exists() { builtin type -P $1 &>/dev/null; }
+__mkdir() { mkdir -p "$1" &>/dev/null || return 1; }
+__app_is_running() { pidof "$1" &>/dev/null || return 1; }
+__mv_f() { [ -e "$1" ] && mv -f "$@" &>/dev/null || return 1; }
+__cp_rf() { [ -e "$1" ] && cp -Rfa "$@" &>/dev/null || return 1; }
+__chmod() { [ -e "$2" ] && chmod -Rf "$@" 2>/dev/null || return 1; }
+__replace_one() { $sed -i "s|$1|$2|g" "$3" &>/dev/null || return 1; }
+__rm_rf() { [ -e "$1" ] && { rm -Rf "$@" &>/dev/null || return 1; } || true; }
+__rm_link() { [ -e "$1" ] && { rm -rf "$1" &>/dev/null || return 1; } || true; }
+__download_file() { curl -q -LSsf "$1" -o "$2" 2>/dev/null || return 1; }
+__input_is_number() { test -n "$1" && test -z "${1//[0-9]/}" || return 1; }
+__failexitcode() { [ $1 -ne 0 ] && printf_red "😠 $2 😠" && exit ${1:-4}; }
+__get_exit_status() { s=$? && getRunStatus=$((s + ${getRunStatus:-0})) && return $s; }
+__service_is_running() { systemctl is-active $1 2>&1 | grep -qiw 'active' || return 1; }
+__service_is_active() { systemctl is-enabled $1 2>&1 | grep -qiw 'enabled' || return 1; }
+__get_version() { echo "$@" | awk -F '.' '{ printf("%d%d%d%d\n", $1,$2,$3,$4) }'; }
+__silent_start() { __cmd_exists $1 && (eval "$*" &>/dev/null &) && __app_is_running $1 || return 1; }
+__total_memory() { mem="$(free | grep -i 'mem: ' | awk -F ' ' '{print $2}')" && echo $((mem / 1000)); }
+__symlink() { { __rm_rf "$2" || true; } && ln_sf "$1" "$2" &>/dev/null || { [ -L "$2" ] || return 1; }; }
+__get_pid() { ps -aux | grep -v ' grep ' | grep "$1" | awk -F ' ' '{print $2}' | grep ${2:-[0-9]} || return 1; }
+__dir_count() { find -L "${1:-./}" -maxdepth "${2:-1}" -not -path "${1:-./}/.git/*" -type d 2>/dev/null | wc -l; }
+__file_count() { find -L "${1:-./}" -maxdepth "${2:-1}" -not -path "${1:-./}/.git/*" -type f 2>/dev/null | wc -l; }
+__kill_process_id() { __input_is_number $1 && pid=$1 && { [ -z "$pid" ] || kill -15 $pid &>/dev/null; } || return 1; }
+__kill() { __kill_process_id "$1" || __kill_process_name "$1" || { ! __app_is_running "$1" || kill -9 $pid &>/dev/null; } || return 1; }
+__replace_all() { [ -n "$3" ] && [ -e "$3" ] && find "$3" -not -path "$3/.git/*" -type f -exec $sed -i "s|$1|$2|g" {} \; >/dev/null 2>&1 || return 1; }
+__kill_process_name() { local pid="$(pidof "$1" 2>/dev/null)" && { [ -z "$pid" ] || { kill -19 $pid &>/dev/null && ! __app_is_running "$1" && return 0; } || kill -9 $pid &>/dev/null; } || return 1; }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# OS Support: supported_os unsupported_oses
-supported_os linux
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Make sure the scripts repo is installed
-scripts_check
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Defaults
-APPNAME="${APPNAME:-xfce4}"
-APPDIR="$CONF/$APPNAME"
-INSTDIR="$CASJAYSDEVSHARE/$SCRIPTS_PREFIX/$APPNAME"
-REPO_BRANCH="${GIT_REPO_BRANCH:-main}"
-REPO="${DESKTOPMGR:-https://github.com/desktopmgr}/$APPNAME"
-REPORAW="$REPO/raw/$REPO_BRANCH"
-APPVERSION="$(__appversion "$REPORAW/version.txt")"
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Setup plugins
-PLUGNAMES=""
-PLUGDIR="${SHARE:-$HOME/.local/share}/$APPNAME"
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Call the desktopmgr function
-desktopmgr_install
+sed="$(builtin type -P gsed 2>/dev/null || builtin type -P sed 2>/dev/null || return)"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Script options IE: --help --version
 show_optvars "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Do not update
-installer_noupdate "$@"
+# Verify repository exists
+verify_url "$REPO"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Requires root - no point in continuing
-#sudoreq  # sudo required
-#sudorun  # sudo optional
+# OS Support: supported_os unsupported_oses
+supported_os linux
+unsupported_oses mac windows
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# initialize the installer
+# get sudo credentials
+sudorun "true"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Requires root - restarting with sudo
+#sudoreq "$0 *"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Make sure the scripts repo is installed
+scripts_check
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Call the main function
+desktopmgr_install
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# trap the cleanup function
+trap_exit
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Initialize the installer
 desktopmgr_run_init
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# end with a space
-APP="$APPNAME geany firefox thunar xfce4-terminal sxhkd "
-APP+="xfce4-notifyd notify-send lxappearance qt5ct "
-PERL=""
-PYTH=""
-PIPS=""
-CPAN=""
-GEMS=""
+# Do not update
+#installer_noupdate "$@"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# install packages - useful for package that have the same name on all oses
-install_packages "$APP"
+# Defaults
+APPNAME="xfce4"
+APPVERSION="$(__appversion "https://github.com/$SCRIPTS_PREFIX/$APPNAME/raw/$REPO_BRANCH/version.txt")"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# install required packages using file
-install_required "$APP"
+# Define these if build script is used
+BUILD_NAME="xfce4"
+BUILD_SCRIPT_REBUILD="false"
+BUILD_SRC_URL=""
+BUILD_SCRIPT_SRC_DIR="$PLUGIN_DIR/source"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check for perl modules and install using system package manager
-install_perl "$PERL"
+# Setup plugins
+PLUGIN_REPOS=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check for python modules and install using system package manager
-install_python "$PYTH"
+# Grab release from github releases
+LATEST_RELEASE=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check for pip binaries and install using python package manager
-install_pip "$PIPS"
+# Specify global packages
+GLOBAL_OS_PACKAGES="xfce4 geany firefox thunar xfce4-terminal sxhkd xfce4-notifyd notify-send lxappearance qt5ct"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check for cpan binaries and install using perl package manager
-install_cpan "$CPAN"
+# Define linux only packages
+LINUX_OS_PACKAGES=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check for ruby binaries and install using ruby package manager
-install_gem "$GEMS"
+# Define MacOS only packages
+MAC_OS_PACKAGES=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Other dependencies
-dotfilesreq
-dotfilesreqadmin
+# Define Windows only packages
+WIN_OS_PACKAGES=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Ensure directories exist
-ensure_dirs
-ensure_perms
+# Specify ARCH_USER_REPO Pacakges
+AUR_PACKAGES=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Backup if needed
-if [ -d "$APPDIR" ]; then
-  execute "backupapp $APPDIR $APPNAME" "Backing up $APPDIR"
-fi
-# Main progam
-if am_i_online; then
-  if [ -d "$INSTDIR/.git" ]; then
-    execute "git_update $INSTDIR" "Updating $APPNAME configurations"
-  else
-    execute "git_clone $REPO $INSTDIR" "Installing $APPNAME configurations"
-  fi
-  # exit on fail
-  failexitcode $? "Failed to download $REPO/$APPNAME to $INSTDIR"
-fi
+# Define required system python packages
+PYTHON_PACKAGES=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Plugins
-if am_i_online; then
-  if [ "$PLUGNAMES" != "" ]; then
-    if [ -d "$PLUGDIR"/PLUREP/.git ]; then
-      execute "git_update $PLUGDIR/PLUGREP" "Updating plugin PLUGNAME"
-    else
-      execute
-      "git_clone PLUGINREPO $PLUGDIR/PLUGREP" "Installing plugin PLUGREP"
+# Define required system perl packages
+PERL_PACKAGES=""
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# define additional packages - tries to install via tha package managers
+NODEJS=""
+PERL_CPAN=""
+RUBY_GEMS=""
+PYTHON_PIP=""
+PHP_COMPOSER=""
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Run custom actions
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Show a custom message after install
+__run_post_message() {
+  printf_question_timeout "$ICON_QUESTION Should I install the themes and icons?" "1" "answer" "-s"
+  if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+    SUDO_PROMPT="$(printf "\n\t\t\033[1;31m")[sudo]$(printf "\033[1;36m") password for $(printf "\033[1;32m")%p: $(printf "\033[0m")"
+    printf_cyan "Getting root privileges"
+    if sudo -n true; then
+      printf_blue "Proccessing fonts/icons/themes"
+      execute "sudo bash -c 'fontmgr install --all'" "Installing fonts"
+      execute "sudo bash -c 'iconmgr install --all'" "Installing icons"
+      execute "sudo bash -c 'thememgr install --all'" "Installing themes"
     fi
   fi
-  # exit on fail
-  failexitcode $? "Failed to download Plugin repo"
-fi
+  if __cmd_exists grub2 || __cmd_exists grub; then
+    printf_question_timeout "$ICON_QUESTION Should I install grub customizations?" "1" "answer" "-s"
+    if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+      SUDO_PROMPT="$(printf "\n\t\t\033[1;31m")[sudo]$(printf "\033[1;36m") password for $(printf "\033[1;32m")%p: $(printf "\033[0m")"
+      printf_cyan "Getting root privileges"
+      if sudo -n true; then
+        printf_blue "Proccessing customizations"
+        execute "sudo systemmgr install grub" "Installing system packages"
+      fi
+    fi
+  fi
+}
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# run post install scripts
-run_post_custom() {
+# Define pre-install scripts
+__run_pre_install() {
+  local getRunStatus=0
   if pidof xfce4-panel &>/dev/null; then xfce4-panel -s &>/dev/null && xfce4-panel -q &>/dev/null && sleep 3; fi
   for d in "$APPDIR"/panel/launcher-*; do
-    rm_rf "$d"
+    __rm_rf "$d"
   done
-  cp_rf "$INSTDIR/local_share/." "$HOME/.local/share/xfce4/."
+  __cp_rf "$INSTDIR/local_share/." "$HOME/.local/share/xfce4/."
+  return $getRunStatus
 }
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run before primary post install function
+__run_prepost_install() {
+  local getRunStatus=0
 
-run_postinst() {
-  run_post_custom
-  desktopmgr_run_post
+  return $getRunStatus
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run after primary post install function
+__run_post_install() {
+  local getRunStatus=0
   if [ -n "$MPDSERVER" ]; then
     GETMPDSERVER="$(getent ahosts "$MPDSERVER" 2>/dev/null | head -n1 | awk '{print $1}' | grep '^' || echo "$HOSTNAME")"
   else
     GETMPDSERVER="localhost"
   fi
   mpdhostserver="${GETMPDSERVER}"
-  replace "$APPDIR" "MPDSERVER_host" "$mpdhostserver"
-  replace "$APPDIR" "/home/jason" "$HOME"
+  __replace_all "MPDSERVER_host" "$mpdhostserver" "$APPDIR"
+  __replace_all "/home/jason" "$HOME"
+  return $getRunStatus
 }
-#
-execute "run_postinst" "Running post install scripts"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-printf_question_timeout "$ICON_QUESTION Should I install the themes and icons?" "1" "answer" "-s"
-if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
-  SUDO_PROMPT="$(printf "\n\t\t\033[1;31m")[sudo]$(printf "\033[1;36m") password for $(printf "\033[1;32m")%p: $(printf "\033[0m")"
-  printf_cyan "Getting root privileges"
-  if sudo -n true; then
-    printf_blue "Proccessing fonts/icons/themes"
-    execute "sudo bash -c 'fontmgr install --all'" "Installing fonts"
-    execute "sudo bash -c 'iconmgr install N.I.B.'" "Installing icons"
-    execute "sudo bash -c 'thememgr install Arc-Pink-Dark'" "Installing themes"
+# Custom plugin function
+__custom_plugin() {
+  local getRunStatus=0
+  local tmpFile="${TMP:-/tmp}/desktopmgr_xfce4"
+  pkmgr search xfce4 | awk '{print $1}' | grep 'plugin' >"$tmpFile" && pkmgr list "$tmpFile"
+  [ -f "$tmpFile" ] && __rm_rf "$tmpFile"
+  return $getRunStatus
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# execute build script if exists and install failed or set BUILD_SCRIPT_REBUILD to true to always rebuild
+__run_build_script() {
+  local getRunStatus=0
+  if ! __cmd_exists "$BUILD_NAME" && [ -f "$INSTDIR/build.sh" ]; then
+    export BUILD_NAME BUILD_SCRIPT_SRC_DIR BUILD_SRC_URL BUILD_SCRIPT_REBUILD
+    [ -x "$INSTDIR/build.sh" ] || chmod 755 "$INSTDIR/build.sh"
+    eval "$INSTDIR/build.sh"
+  fi
+  return $getRunStatus
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Other dependencies
+dotfilesreq misc
+dotfilesreqadmin cron
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# END OF CONFIGURATION
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Require a version higher than
+desktopmgr_req_version "$APPVERSION"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Run pre-install commands
+execute "__run_pre_install" "Running pre-installation commands"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# define arch user repo packages
+if_os_id arch && ARCH_USER_REPO="$AUR_PACKAGES"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# define linux packages
+if if_os linux; then
+  if if_os_id arch; then
+    SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $LINUX_OS_PACKAGES $ARCH_OS_PACKAGES"
+  elif if_os_id centos; then
+    SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $LINUX_OS_PACKAGES $CENTOS_OS_PACKAGES"
+  elif if_os_id debian; then
+    SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $LINUX_OS_PACKAGES $DEBIAN_OS_PACKAGES"
+  elif if_os_id ubuntu; then
+    SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $LINUX_OS_PACKAGES $UBUNTU_OS_PACKAGES"
+  else
+    SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $LINUX_OS_PACKAGES"
   fi
 fi
-printf_question_timeout "$ICON_QUESTION Should I install grub customizations?" "1" "answer" "-s"
-if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
-  SUDO_PROMPT="$(printf "\n\t\t\033[1;31m")[sudo]$(printf "\033[1;36m") password for $(printf "\033[1;32m")%p: $(printf "\033[0m")"
-  printf_cyan "Getting root privileges"
-  if sudo -n true; then
-    printf_blue "Proccessing customizations"
-    execute "sudo systemmgr install grub" "Installing system packages"
-  fi
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Define MacOS packages - homebrew
+if if_os mac; then
+  SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $MAC_OS_PACKAGES"
 fi
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Define Windows packages - choco
+if if_os win; then
+  SYSTEM_PACKAGES="$GLOBAL_OS_PACKAGES $WIN_OS_PACKAGES"
+fi
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Attempt install from github release
+install_latest_release "$LATEST_RELEASE"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# install required packages using the aur - Requires yay to be installed
+install_aur "${ARCH_USER_REPO//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# install packages - useful for package that have the same name on all oses
+install_packages "${SYSTEM_PACKAGES//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# install required packages using file from pkmgr repo
+install_required "$APPNAME"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for perl modules and install using system package manager
+install_perl "${PERL_PACKAGES//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for python modules and install using system package manager
+install_python "${PYTHON_PACKAGES//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for pip binaries and install using python package manager
+install_pip "${PYTHON_PIP//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for cpan binaries and install using perl package manager
+install_cpan "${PERL_CPAN//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for ruby binaries and install using ruby package manager
+install_gem "${RUBY_GEMS//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for npm binaries and install using npm/yarn package manager
+install_npm "${NODEJS//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# check for php binaries and install using php composer
+install_php "${PHP_COMPOSER//,/ }"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Ensure directories exist
+ensure_dirs
+ensure_perms
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Backup if needed
+[ -d "$APPDIR" ] && execute "backupapp $APPDIR $APPNAME" "Backing up $APPDIR"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Get configuration files
+instCode=0
+if __am_i_online; then
+  if [ -d "$INSTDIR/.git" ]; then
+    execute "__run_git_clone_pull $INSTDIR" "Updating $APPNAME configurations"
+    instCode=$?
+  else
+    execute "__run_git_clone_pull $REPO $INSTDIR" "Installing $APPNAME configurations"
+    instCode=$?
+  fi
+  # exit on fail
+  __failexitcode $instCode "Failed to setup the git repo from $REPO"
+fi
+unset instCode
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Install Plugins
+exitCodeP=0
+if __am_i_online; then
+  if [ "$PLUGIN_REPOS" != "" ]; then
+    [ -d "$PLUGIN_DIR" ] || mkdir -p "$PLUGIN_DIR"
+    for plugin in $PLUGIN_REPOS; do
+      plugin_name="$(basename "$plugin")"
+      plugin_dir="$PLUGIN_DIR/$plugin_name"
+      if [ -d "$plugin_dir/.git" ]; then
+        execute "git_update $plugin_dir" "Updating plugin $plugin_name"
+        [ $? -ne 0 ] && exitCodeP=$(($? + exitCodeP)) && printf_red "Failed to update $plugin_name"
+      else
+        execute "git_clone $plugin $plugin_dir" "Installing plugin $plugin_name"
+        [ $? -ne 0 ] && exitCodeP=$(($? + exitCodeP)) && printf_red "Failed to install $plugin_name"
+      fi
+    done
+  fi
+  __custom_plugin
+  exitCodeP=$(($? + exitCodeP))
+  # exit on fail
+  __failexitcode $exitCodeP "Installation of plugin failed"
+fi
+unset exitCodeP
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run post install scripts
+run_postinst() {
+  local exitCodeP=0
+  __run_prepost_install || exitCodeP=$((exitCodeP + 1))
+  desktopmgr_run_post || exitCodeP=$((exitCodeP + 1))
+  __run_post_install || exitCodeP=$((exitCodeP + 1))
+  return $exitCodeP
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run post install scripts
+execute "run_postinst" "Running post install scripts"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # create version file
 desktopmgr_install_version
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# exit
+# run exit function
 run_exit
-# end
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run any external scripts
+__run_build_script
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Output post install message
+__run_post_message
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# End application
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# lets exit with code
+exit ${EXIT:-${exitCode:-0}}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ex: ts=2 sw=2 et filetype=sh
