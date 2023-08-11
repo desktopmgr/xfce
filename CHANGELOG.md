@@ -1,3 +1,15 @@
+## 🗃️ Changelog: 2023-08-10 at 20:04:23 🗃️  
+
+🗃️ Updated domain names 🗃️  
+  
+  
+etc/autostart.sh  
+install.sh  
+
+
+### 🗃️ End of changes for 202307151736-git 🗃️  
+
+----  
 ## 🗃️ Changelog: 2023-07-15 at 17:36:49 🗃️  
 
 🗃️ Committing everything that changed 🗃️  
